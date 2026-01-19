@@ -2,11 +2,6 @@ import ctypes
 import os
 
 # ------------------------------------------------------------
-# Configuration: toggle FAST_MODE here
-# ------------------------------------------------------------
-FAST_MODE = True   # Set to False for non-fast mode
-
-# ------------------------------------------------------------
 # Load the DLL
 # ------------------------------------------------------------
 dll_name = "libsso_formats_core.dll" if os.name == "nt" else "libsso_formats_core.so"
@@ -28,40 +23,20 @@ class VFHeader(ctypes.Structure):
 # ------------------------------------------------------------
 # Entry struct (FAST vs NON-FAST ABI)
 # ------------------------------------------------------------
-if FAST_MODE:
-
-    class VFEntry(ctypes.Structure):
-        _pack_ = 1
-        _fields_ = [
-            ("file_name", ctypes.c_char * 129),   # VF_MAX_NAME + 1
-            ("unknown1", ctypes.c_uint8 * 8),
-            ("original_crc", ctypes.c_uint8 * 4),
-            ("exported_crc", ctypes.c_uint8 * 4),
-            ("unknown2", ctypes.c_uint8 * 4),
-            ("file_size", ctypes.c_uint32),
-            ("unknown4", ctypes.c_uint8 * 8),
-            ("source_file_number", ctypes.c_uint32),
-            ("unknown5", ctypes.c_uint8 * 4),
-            ("file_path", ctypes.c_char * 129),   # VF_MAX_PATH + 1
-        ]
-
-else:
-
-    class VFEntry(ctypes.Structure):
-        _pack_ = 1
-        _fields_ = [
-            ("file_name", ctypes.c_char_p),
-            ("unknown1", ctypes.c_uint8 * 8),
-            ("original_crc", ctypes.c_uint8 * 4),
-            ("exported_crc", ctypes.c_uint8 * 4),
-            ("unknown2", ctypes.c_uint8 * 4),
-            ("file_size", ctypes.c_uint32),
-            ("unknown4", ctypes.c_uint8 * 8),
-            ("source_file_number", ctypes.c_uint32),
-            ("unknown5", ctypes.c_uint8 * 4),
-            ("file_path", ctypes.c_char_p),
-        ]
-
+class VFEntry(ctypes.Structure):
+    _pack_ = 1
+    _fields_ = [
+        ("file_name", ctypes.c_char_p),
+        ("unknown1", ctypes.c_uint8 * 8),
+        ("original_crc", ctypes.c_uint8 * 4),
+        ("exported_crc", ctypes.c_uint8 * 4),
+        ("unknown2", ctypes.c_uint8 * 4),
+        ("file_size", ctypes.c_uint32),
+        ("unknown4", ctypes.c_uint8 * 8),
+        ("source_file_number", ctypes.c_uint32),
+        ("unknown5", ctypes.c_uint8 * 4),
+        ("file_path", ctypes.c_char_p),
+    ]
 
 # ------------------------------------------------------------
 # VFFile struct

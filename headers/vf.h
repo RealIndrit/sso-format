@@ -18,15 +18,6 @@
 extern "C" {
 #endif
 
-#ifndef FAST_MODE
-#define FAST_MODE 1
-#endif
-
-#if FAST_MODE
-#define VF_MAX_NAME 127
-#define VF_MAX_PATH 127
-#endif
-
 #pragma pack(push, 1)
 typedef struct {
     uint8_t  magic_bytes[4];
@@ -34,23 +25,6 @@ typedef struct {
     uint32_t data_length;      /* number of entries */
 } vf_header_t;
 #pragma pack(pop)
-
-#if FAST_MODE
-
-typedef struct {
-    char     file_name[VF_MAX_NAME + 1];
-    uint8_t  unknown1[8];
-    uint8_t  original_crc[4];
-    uint8_t  exported_crc[4];
-    uint8_t  unknown2[4];
-    uint32_t file_size;
-    uint8_t  unknown4[8];
-    uint32_t source_file_number;
-    uint8_t  unknown5[4];
-    char     file_path[VF_MAX_PATH + 1];
-} vf_entry_t;
-
-#else
 
 typedef struct {
     char    *file_name;
@@ -64,8 +38,6 @@ typedef struct {
     uint8_t  unknown5[4];
     char    *file_path;
 } vf_entry_t;
-
-#endif
 
 typedef struct {
     vf_header_t header;

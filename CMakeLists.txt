@@ -4,8 +4,6 @@ project(sso_formats_core C)
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-add_definitions(-DFAST_MODE=1)
-
 if(MSVC)
     add_compile_options(/O2 /Oi /Ot /GL)
     add_link_options(/LTCG)

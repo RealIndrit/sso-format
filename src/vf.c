@@ -49,13 +49,6 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
     if (!vf_read_exact(f, &name_len, 4))
         return 0;
 
-#if FAST_MODE
-    if (name_len > VF_MAX_NAME)
-        return 0;
-    if (!vf_read_exact(f, e->file_name, name_len))
-        return 0;
-    e->file_name[name_len] = '\0';
-#else
     e->file_name = (char *)malloc(name_len + 1);
     if (!e->file_name)
         return 0;
@@ -65,7 +58,6 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
         return 0;
     }
     e->file_name[name_len] = '\0';
-#endif
 
     /* fixed block */
     vf_entry_fixed_t blk;
@@ -85,13 +77,6 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
     if (!vf_read_exact(f, &path_len, 4))
         return 0;
 
-#if FAST_MODE
-    if (path_len > VF_MAX_PATH)
-        return 0;
-    if (!vf_read_exact(f, e->file_path, path_len))
-        return 0;
-    e->file_path[path_len] = '\0';
-#else
     e->file_path = (char *)malloc(path_len + 1);
     if (!e->file_path)
         return 0;
@@ -101,7 +86,6 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
         return 0;
     }
     e->file_path[path_len] = '\0';
-#endif
 
     return 1;
 }
@@ -113,17 +97,10 @@ int vf_entry_write(FILE *f, const vf_entry_t *e) {
     uint32_t name_len;
     uint32_t path_len;
 
-#if FAST_MODE
-    name_len = (uint32_t)strlen(e->file_name);
-    path_len = (uint32_t)strlen(e->file_path);
-    if (name_len > VF_MAX_NAME || path_len > VF_MAX_PATH)
-        return 0;
-#else
     if (!e->file_name || !e->file_path)
         return 0;
     name_len = (uint32_t)strlen(e->file_name);
     path_len = (uint32_t)strlen(e->file_path);
-#endif
 
     /* file_name length + data */
     if (!vf_write_exact(f, &name_len, 4))
@@ -237,14 +214,12 @@ VF_API void vf_file_free(vf_file_t *vf) {
     if (!vf)
         return;
 
-#if !FAST_MODE
     if (vf->entries) {
         for (uint32_t i = 0; i < vf->header.data_length; ++i) {
             free(vf->entries[i].file_name);
             free(vf->entries[i].file_path);
         }
     }
-#endif
 
     free(vf->entries);
     free(vf);
@@ -256,13 +231,6 @@ VF_API void vf_entry_set_name(vf_entry_t *e, const char *name) {
     if (!e || !name)
         return;
 
-#if FAST_MODE
-    size_t len = strlen(name);
-    if (len > VF_MAX_NAME)
-        len = VF_MAX_NAME;
-    memcpy(e->file_name, name, len);
-    e->file_name[len] = '\0';
-#else
     size_t len = strlen(name);
     char *buf = (char *)malloc(len + 1);
     if (!buf)
@@ -270,20 +238,12 @@ VF_API void vf_entry_set_name(vf_entry_t *e, const char *name) {
     memcpy(buf, name, len + 1);
     free(e->file_name);
     e->file_name = buf;
-#endif
 }
 
 VF_API void vf_entry_set_path(vf_entry_t *e, const char *path) {
     if (!e || !path)
         return;
 
-#if FAST_MODE
-    size_t len = strlen(path);
-    if (len > VF_MAX_PATH)
-        len = VF_MAX_PATH;
-    memcpy(e->file_path, path, len);
-    e->file_path[len] = '\0';
-#else
     size_t len = strlen(path);
     char *buf = (char *)malloc(len + 1);
     if (!buf)
@@ -291,27 +251,18 @@ VF_API void vf_entry_set_path(vf_entry_t *e, const char *path) {
     memcpy(buf, path, len + 1);
     free(e->file_path);
     e->file_path = buf;
-#endif
 }
 
 VF_API const char *vf_entry_get_name(const vf_entry_t *e) {
     if (!e)
         return NULL;
-#if FAST_MODE
     return e->file_name;
-#else
-    return e->file_name;
-#endif
 }
 
 VF_API const char *vf_entry_get_path(const vf_entry_t *e) {
     if (!e)
         return NULL;
-#if FAST_MODE
     return e->file_path;
-#else
-    return e->file_path;
-#endif
 }
 
 /* ================== ENTRY LIFECYCLE ================== */
@@ -321,14 +272,8 @@ VF_API vf_entry_t *vf_entry_create(void) {
     if (!e)
         return NULL;
 
-#if FAST_MODE
-    e->file_name[0] = '\0';
-    e->file_path[0] = '\0';
-#else
     e->file_name = NULL;
     e->file_path = NULL;
-#endif
-
     return e;
 }
 
@@ -336,11 +281,8 @@ VF_API void vf_entry_free(vf_entry_t *e) {
     if (!e)
         return;
 
-#if !FAST_MODE
     free(e->file_name);
     free(e->file_path);
-#endif
-
     free(e);
 }
 
@@ -370,12 +312,10 @@ VF_API int vf_file_resize(vf_file_t *vf, uint32_t new_count) {
         return 1;
 
     if (new_count == 0) {
-#if !FAST_MODE
         for (uint32_t i = 0; i < old_count; ++i) {
             free(vf->entries[i].file_name);
             free(vf->entries[i].file_path);
         }
-#endif
         free(vf->entries);
         vf->entries = NULL;
         vf->header.data_length = 0;
@@ -390,19 +330,11 @@ VF_API int vf_file_resize(vf_file_t *vf, uint32_t new_count) {
 
     if (new_count > old_count) {
         memset(&vf->entries[old_count], 0, (new_count - old_count) * sizeof(vf_entry_t));
-#if FAST_MODE
-        for (uint32_t i = old_count; i < new_count; ++i) {
-            vf->entries[i].file_name[0] = '\0';
-            vf->entries[i].file_path[0] = '\0';
-        }
-#endif
     } else {
-#if !FAST_MODE
         for (uint32_t i = new_count; i < old_count; ++i) {
             free(vf->entries[i].file_name);
             free(vf->entries[i].file_path);
         }
-#endif
     }
 
     vf->header.data_length = new_count;
@@ -420,15 +352,10 @@ VF_API int vf_file_add_entry(vf_file_t *vf, const vf_entry_t *src) {
     vf_entry_t *dst = &vf->entries[old_count];
     memset(dst, 0, sizeof(*dst));
 
-#if FAST_MODE
-    vf_entry_set_name(dst, src->file_name);
-    vf_entry_set_path(dst, src->file_path);
-#else
     if (src->file_name)
         vf_entry_set_name(dst, src->file_name);
     if (src->file_path)
         vf_entry_set_path(dst, src->file_path);
-#endif
 
     memcpy(dst->unknown1,     src->unknown1,     8);
     memcpy(dst->original_crc, src->original_crc, 4);
@@ -450,10 +377,8 @@ VF_API int vf_file_remove_entry(vf_file_t *vf, uint32_t index) {
     if (index >= count)
         return 0;
 
-#if !FAST_MODE
     free(vf->entries[index].file_name);
     free(vf->entries[index].file_path);
-#endif
 
     if (index < count - 1) {
         memmove(&vf->entries[index],
@@ -581,15 +506,10 @@ VF_API vf_entry_t *vf_entry_clone(const vf_entry_t *src) {
     if (!dst)
         return NULL;
 
-#if FAST_MODE
-    vf_entry_set_name(dst, src->file_name);
-    vf_entry_set_path(dst, src->file_path);
-#else
     if (src->file_name)
         vf_entry_set_name(dst, src->file_name);
     if (src->file_path)
         vf_entry_set_path(dst, src->file_path);
-#endif
 
     memcpy(dst->unknown1,     src->unknown1,     8);
     memcpy(dst->original_crc, src->original_crc, 4);
