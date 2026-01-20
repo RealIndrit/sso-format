@@ -16,12 +16,12 @@ class VFHeader(ctypes.Structure):
     _fields_ = [
         ("magic_bytes", ctypes.c_uint8 * 4),
         ("manifest_version", ctypes.c_uint32),
-        ("data_length", ctypes.c_uint32),
+        ("entry_count", ctypes.c_uint32),
     ]
 
 
 # ------------------------------------------------------------
-# Entry struct (FAST vs NON-FAST ABI)
+# Entry struct
 # ------------------------------------------------------------
 class VFEntry(ctypes.Structure):
     _pack_ = 1
@@ -144,8 +144,8 @@ def _make_block_setter(func, size):
         if data is None or len(data) != size:
             raise ValueError(f"Expected {size} bytes")
         arr = (ctypes.c_uint8 * size)(*data)
-        ok = func(entry, arr)
-        if not ok:
+        error = func(entry, arr)
+        if error:
             raise RuntimeError("Setter failed (NULL or invalid input)")
 
     return setter
@@ -188,7 +188,7 @@ def load_vf(path: str) -> ctypes.POINTER(VFFile):
 
 
 def save_vf(path: str, vf_file: ctypes.POINTER(VFFile)):
-    if not vf.vf_file_write(path.encode("utf-8"), vf_file):
+    if vf.vf_file_write(path.encode("utf-8"), vf_file):
         raise RuntimeError(f"Failed to write VF file: {path}")
 
 

@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "io.h"
 
 #ifdef _WIN32
     #ifdef VF_BUILD_DLL
@@ -22,7 +23,7 @@ extern "C" {
 typedef struct {
     uint8_t  magic_bytes[4];
     uint32_t manifest_version;
-    uint32_t data_length;      /* number of entries */
+    uint32_t entry_count;
 } vf_header_t;
 #pragma pack(pop)
 
@@ -80,7 +81,6 @@ VF_API int         vf_file_remove_entry(vf_file_t *vf, uint32_t index);
 VF_API int         vf_file_resize(vf_file_t *vf, uint32_t new_count);
 
 /* ================== FIELD GETTERS / SETTERS ================== */
-/* Integers */
 
 VF_API uint32_t    vf_entry_get_file_size(const vf_entry_t *e);
 VF_API void        vf_entry_set_file_size(vf_entry_t *e, uint32_t size);
@@ -88,7 +88,6 @@ VF_API void        vf_entry_set_file_size(vf_entry_t *e, uint32_t size);
 VF_API uint32_t    vf_entry_get_source_file_number(const vf_entry_t *e);
 VF_API void        vf_entry_set_source_file_number(vf_entry_t *e, uint32_t num);
 
-/* Binary blocks (safe memcpy in/out, setters return 1 on success, 0 on error) */
 
 VF_API void        vf_entry_get_unknown1(const vf_entry_t *e, uint8_t out[8]);
 VF_API int         vf_entry_set_unknown1(vf_entry_t *e, const uint8_t in[8]);
