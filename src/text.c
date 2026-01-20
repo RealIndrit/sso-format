@@ -6,9 +6,43 @@
 
 /* ================== INTERNAL HELPERS ================== */
 
+#pragma pack(push, 1)
+typedef struct {
+    uint8_t key_length;
+    uint8_t unknown[2];
+    uint8_t key_offset;
+} entry_prefix_t;
+
+typedef struct {
+    uint8_t unknown2[4];
+    uint8_t unknown3[4];
+} entry_mid_t;
+
+typedef struct {
+    uint32_t raw_value_length;
+    uint8_t unknown4;
+    uint8_t unknown5;
+    uint8_t unknown6;
+}entry_value_meta_t;
+#pragma pack(pop)
+
 static void shift_bytes(uint8_t *buf, size_t len, int shift) {
     for (size_t i = 0; i < len; i++)
         buf[i] = (uint8_t)((buf[i] + shift) & 0xFF);
+}
+
+static char *utf16_to_ascii_hacky(const uint8_t *raw, size_t len_bytes) {
+    size_t chars = len_bytes / 2;
+    char *out = malloc(chars + 1);
+    if (!out) return NULL;
+
+    for (size_t i = 0; i < chars; i++) {
+        uint16_t wc = raw[i*2] | (raw[i*2 + 1] << 8); // UTF‑16LE
+        out[i] = (wc < 0x80) ? (char)wc : '?';
+    }
+
+    out[chars] = '\0';
+    return out;
 }
 
 /* ================== STRUCT I/O ================== */
@@ -21,19 +55,12 @@ int text_header_read(FILE *f, text_header_t *h) {
 }
 
 int text_header_write(FILE *f, const text_header_t *h) {
-    if (!f || !h) return 1;
+    if (!f || !h)
+        return 1;
 
-    if (fwrite(h->unknown,  1, 4, f) != 4) return 1;
-    if (fwrite(h->unknown2, 1, 4, f) != 4) return 1;
-    if (fwrite(h->unknown3, 1, 4, f) != 4) return 1;
+    if (fwrite(h, 1, sizeof(text_header_t), f) != sizeof(text_header_t))
+        return 1;
 
-    uint8_t len_buf[4];
-    len_buf[0] = (uint8_t)(h->entry_count & 0xFF);
-    len_buf[1] = (uint8_t)((h->entry_count >> 8) & 0xFF);
-    len_buf[2] = (uint8_t)((h->entry_count >> 16) & 0xFF);
-    len_buf[3] = (uint8_t)((h->entry_count >> 24) & 0xFF);
-
-    if (fwrite(len_buf, 1, 4, f) != 4) return 1;
     return 0;
 }
 
@@ -41,18 +68,14 @@ int text_entry_read(FILE *f, text_entry_t *e) {
     if (!f || !e) return 1;
     memset(e, 0, sizeof(*e));
 
-    /* key_length */
     if (io_read_exact(f, &e->key_length, 1) != 0) return 1;
 
-    /* unknown (2 bytes) */
     if (io_read_exact(f, e->unknown, 2) != 0) return 1;
 
-    /* key_offset */
     if (io_read_exact(f, &e->key_offset, 1) != 0) return 1;
 
-    /* encoded key */
     if (e->key_length > 0) {
-        uint8_t *encoded_key = (uint8_t *)malloc(e->key_length);
+        uint8_t *encoded_key = malloc(e->key_length);
         if (!encoded_key) return 1;
 
         if (io_read_exact(f, encoded_key, e->key_length) != 0) {
@@ -62,7 +85,7 @@ int text_entry_read(FILE *f, text_entry_t *e) {
 
         shift_bytes(encoded_key, e->key_length, (int)e->key_offset);
 
-        e->key = (char *)malloc(e->key_length + 1);
+        e->key = malloc(e->key_length + 1);
         if (!e->key) {
             free(encoded_key);
             return 1;
@@ -71,34 +94,29 @@ int text_entry_read(FILE *f, text_entry_t *e) {
         e->key[e->key_length] = '\0';
 
         free(encoded_key);
-    } else {
-        e->key = NULL;
     }
 
-    /* unknown2 (4 bytes) */
     if (io_read_exact(f, e->unknown2, 4) != 0) return 1;
 
-    /* unknown3 (4 bytes) */
     if (io_read_exact(f, e->unknown3, 4) != 0) return 1;
 
-    /* raw_value_length (4 bytes, little-endian) */
     uint8_t len_buf[4];
     if (io_read_exact(f, len_buf, 4) != 0) return 1;
-    uint32_t raw_value_length = (uint32_t)(len_buf[0] |
-                                           (len_buf[1] << 8) |
-                                           (len_buf[2] << 16) |
-                                           (len_buf[3] << 24));
+    uint32_t raw_value_length =
+        (uint32_t)(len_buf[0] |
+                  (len_buf[1] << 8) |
+                  (len_buf[2] << 16) |
+                  (len_buf[3] << 24));
+
     if (raw_value_length < 2) return 1;
     e->value_length = raw_value_length - 2;
 
-    /* unknown4, unknown5, unknown6 */
     if (io_read_exact(f, &e->unknown4, 1) != 0) return 1;
     if (io_read_exact(f, &e->unknown5, 1) != 0) return 1;
     if (io_read_exact(f, &e->unknown6, 1) != 0) return 1;
 
-    /* value_raw */
     if (e->value_length > 0) {
-        uint8_t *value_raw = (uint8_t *)malloc(e->value_length);
+        uint8_t *value_raw = malloc(e->value_length);
         if (!value_raw) return 1;
 
         if (io_read_exact(f, value_raw, e->value_length) != 0) {
@@ -106,7 +124,6 @@ int text_entry_read(FILE *f, text_entry_t *e) {
             return 1;
         }
 
-        /* skip trailing 2 bytes */
         uint8_t skip[2];
         if (io_read_exact(f, skip, 2) != 0) {
             free(value_raw);
@@ -122,13 +139,15 @@ int text_entry_read(FILE *f, text_entry_t *e) {
 
         shift_bytes(value_raw, e->value_length, (int)e->value_offset);
 
-        e->value = malloc(e->value_length);
-        if (!e->value) {
-            free(value_raw);
-            return 1;
-        }
-        memcpy(e->value, value_raw, e->value_length);
+        /* --- HACKY UTF‑16 → ASCII REPLACEMENT --- */
+        e->value = utf16_to_ascii_hacky(value_raw, e->value_length);
         free(value_raw);
+
+        if (!e->value)
+            return 1;
+
+        e->value_length = e->value_length / 2;
+
     } else {
         e->value = NULL;
         uint8_t skip[2];
@@ -138,11 +157,10 @@ int text_entry_read(FILE *f, text_entry_t *e) {
     return 0;
 }
 
-/* Mirrors Python TextEntry.write NotImplementedError */
 int text_entry_write(FILE *f, const text_entry_t *e) {
     (void)f;
     (void)e;
-    return 1; /* not implemented => error */
+    return 1;
 }
 
 /* ================== CORE PUBLIC API ================== */
@@ -195,7 +213,7 @@ TEXT_API text_file_t *text_file_read(const char *filename) {
 TEXT_API int text_file_write(const char *filename, const text_file_t *tf) {
     (void)filename;
     (void)tf;
-    return 1; /* not implemented => error */
+    return 1;
 }
 
 TEXT_API void text_file_free(text_file_t *tf) {

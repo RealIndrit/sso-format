@@ -13,6 +13,7 @@ endif()
 
 add_library(sso_formats_core SHARED
         src/vf.c
+        src/text.c
 )
 
 target_include_directories(sso_formats_core PUBLIC headers)
