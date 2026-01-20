@@ -5,10 +5,7 @@ A `.CCX` file acts as a **file integrity manifest**, allowing the engine to veri
 
 It contains:
 - A global header  
-- A list of file entries  
-- CRC32 checksums values for validation  
-- File paths and metadata  
-- Index of the `ColdStorageArchive` which the file is packaged
+- A list of file entries
 
 ---
 
