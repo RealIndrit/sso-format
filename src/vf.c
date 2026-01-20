@@ -16,6 +16,7 @@ typedef struct {
     uint8_t  unknown4[8];
     uint32_t source_file_number;
     uint8_t  unknown5[4];
+    uint32_t path_len;
 } vf_entry_fixed_t;
 #pragma pack(pop)
 
@@ -63,18 +64,15 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
     e->source_file_number =    blk.source_file_number;
     memcpy(e->unknown5,        blk.unknown5,        4);
 
-    if (io_read_exact(f, &path_len, 4))
-        return 1;
-
-    e->file_path = (char *)malloc(path_len + 1);
+    e->file_path = (char *)malloc(blk.path_len + 1);
     if (!e->file_path)
         return 1;
-    if (io_read_exact(f, e->file_path, path_len)) {
+    if (io_read_exact(f, e->file_path, blk.path_len)) {
         free(e->file_path);
         e->file_path = NULL;
         return 1;
     }
-    e->file_path[path_len] = '\0';
+    e->file_path[blk.path_len] = '\0';
 
     return 0;
 }
@@ -107,12 +105,11 @@ int vf_entry_write(FILE *f, const vf_entry_t *e) {
     memcpy(blk.unknown4,        e->unknown4,        8);
     blk.source_file_number =    e->source_file_number;
     memcpy(blk.unknown5,        e->unknown5,        4);
+    blk.path_len =              path_len;
 
     if (io_write_exact(f, &blk, sizeof(blk)))
         return 1;
 
-    if (io_write_exact(f, &path_len, 4))
-        return 1;
     if (io_write_exact(f, e->file_path, path_len))
         return 1;
 
