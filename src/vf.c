@@ -36,7 +36,7 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
     if (!f || !e)
         return 1;
 
-    uint32_t name_len, path_len;
+    uint32_t name_len;
 
     if (io_read_exact(f, &name_len, 4))
         return 1;
@@ -81,14 +81,10 @@ int vf_entry_write(FILE *f, const vf_entry_t *e) {
     if (!f || !e)
         return 1;
 
-    uint32_t name_len;
-    uint32_t path_len;
-
     if (!e->file_name || !e->file_path)
         return 1;
-
-    name_len = (uint32_t)strlen(e->file_name);
-    path_len = (uint32_t)strlen(e->file_path);
+    const uint32_t name_len = (uint32_t)strlen(e->file_name);
+    const uint32_t path_len = (uint32_t) strlen(e->file_path);
 
     if (io_write_exact(f, &name_len, 4))
         return 1;
