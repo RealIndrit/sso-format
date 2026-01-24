@@ -9,6 +9,11 @@ It contains:
 
 ---
 
+## Endianness Requirement
+The PXEngine framework and all associated tooling operate exclusively on little‑endian systems.
+This design choice eliminates the need for runtime byte‑swapping, reducing instruction count and improving execution speed, this is to stay around
+100ns per FileEntry parse time. As a result, all multi‑byte integer fields in .CCX files are stored and interpreted in little‑endian format, and big‑endian platforms are not supported.
+
 ## 1. File Overview
 
 A `.CCX` file contains:

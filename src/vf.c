@@ -8,14 +8,14 @@
 
 #pragma pack(push, 1)
 typedef struct {
-    uint8_t  unknown1[8];
-    uint8_t  original_crc[4];
-    uint8_t  exported_crc[4];
-    uint8_t  unknown2[4];
+    uint8_t unknown1[8];
+    uint8_t original_crc[4];
+    uint8_t exported_crc[4];
+    uint8_t unknown2[4];
     uint32_t file_size;
-    uint8_t  unknown4[8];
+    uint8_t unknown4[8];
     uint32_t source_file_number;
-    uint8_t  unknown5[4];
+    uint8_t unknown5[4];
     uint32_t path_len;
 } vf_entry_fixed_t;
 #pragma pack(pop)
@@ -41,7 +41,7 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
     if (io_read_exact(f, &name_len, 4))
         return 1;
 
-    e->file_name = (char *)malloc(name_len + 1);
+    e->file_name = (char *) malloc(name_len + 1);
     if (!e->file_name)
         return 1;
     if (io_read_exact(f, e->file_name, name_len)) {
@@ -55,16 +55,16 @@ int vf_entry_read(FILE *f, vf_entry_t *e) {
     if (io_read_exact(f, &blk, sizeof(blk)))
         return 1;
 
-    memcpy(e->unknown1,        blk.unknown1,        8);
-    memcpy(e->original_crc,    blk.original_crc,    4);
-    memcpy(e->exported_crc,    blk.exported_crc,    4);
-    memcpy(e->unknown2,        blk.unknown2,        4);
-    e->file_size =             blk.file_size;
-    memcpy(e->unknown4,        blk.unknown4,        8);
-    e->source_file_number =    blk.source_file_number;
-    memcpy(e->unknown5,        blk.unknown5,        4);
+    memcpy(e->unknown1, blk.unknown1, 8);
+    memcpy(e->original_crc, blk.original_crc, 4);
+    memcpy(e->exported_crc, blk.exported_crc, 4);
+    memcpy(e->unknown2, blk.unknown2, 4);
+    e->file_size = blk.file_size;
+    memcpy(e->unknown4, blk.unknown4, 8);
+    e->source_file_number = blk.source_file_number;
+    memcpy(e->unknown5, blk.unknown5, 4);
 
-    e->file_path = (char *)malloc(blk.path_len + 1);
+    e->file_path = (char *) malloc(blk.path_len + 1);
     if (!e->file_path)
         return 1;
     if (io_read_exact(f, e->file_path, blk.path_len)) {
@@ -83,7 +83,7 @@ int vf_entry_write(FILE *f, const vf_entry_t *e) {
 
     if (!e->file_name || !e->file_path)
         return 1;
-    const uint32_t name_len = (uint32_t)strlen(e->file_name);
+    const uint32_t name_len = (uint32_t) strlen(e->file_name);
     const uint32_t path_len = (uint32_t) strlen(e->file_path);
 
     if (io_write_exact(f, &name_len, 4))
@@ -93,15 +93,15 @@ int vf_entry_write(FILE *f, const vf_entry_t *e) {
 
     vf_entry_fixed_t blk;
 
-    memcpy(blk.unknown1,        e->unknown1,        8);
-    memcpy(blk.original_crc,    e->original_crc,    4);
-    memcpy(blk.exported_crc,    e->exported_crc,    4);
-    memcpy(blk.unknown2,        e->unknown2,        4);
-    blk.file_size =             e->file_size;
-    memcpy(blk.unknown4,        e->unknown4,        8);
-    blk.source_file_number =    e->source_file_number;
-    memcpy(blk.unknown5,        e->unknown5,        4);
-    blk.path_len =              path_len;
+    memcpy(blk.unknown1, e->unknown1, 8);
+    memcpy(blk.original_crc, e->original_crc, 4);
+    memcpy(blk.exported_crc, e->exported_crc, 4);
+    memcpy(blk.unknown2, e->unknown2, 4);
+    blk.file_size = e->file_size;
+    memcpy(blk.unknown4, e->unknown4, 8);
+    blk.source_file_number = e->source_file_number;
+    memcpy(blk.unknown5, e->unknown5, 4);
+    blk.path_len = path_len;
 
     if (io_write_exact(f, &blk, sizeof(blk)))
         return 1;
@@ -125,7 +125,7 @@ VF_API vf_file_t *vf_file_read(const char *filename) {
     static char io_buf[1 << 16];
     setvbuf(f, io_buf, _IOFBF, sizeof(io_buf));
 
-    vf_file_t *vf = (vf_file_t *)calloc(1, sizeof(vf_file_t));
+    vf_file_t *vf = (vf_file_t *) calloc(1, sizeof(vf_file_t));
     if (!vf) {
         fclose(f);
         return NULL;
@@ -144,7 +144,7 @@ VF_API vf_file_t *vf_file_read(const char *filename) {
         return vf;
     }
 
-    vf->entries = (vf_entry_t *)calloc(n, sizeof(vf_entry_t));
+    vf->entries = (vf_entry_t *) calloc(n, sizeof(vf_entry_t));
     if (!vf->entries) {
         fclose(f);
         free(vf);
@@ -212,7 +212,7 @@ VF_API void vf_entry_set_name(vf_entry_t *e, const char *name) {
         return;
 
     size_t len = strlen(name);
-    char *buf = (char *)malloc(len + 1);
+    char *buf = (char *) malloc(len + 1);
     if (!buf)
         return;
     memcpy(buf, name, len + 1);
@@ -225,7 +225,7 @@ VF_API void vf_entry_set_path(vf_entry_t *e, const char *path) {
         return;
 
     size_t len = strlen(path);
-    char *buf = (char *)malloc(len + 1);
+    char *buf = (char *) malloc(len + 1);
     if (!buf)
         return;
     memcpy(buf, path, len + 1);
@@ -248,7 +248,7 @@ VF_API const char *vf_entry_get_path(const vf_entry_t *e) {
 /* ================== ENTRY LIFECYCLE ================== */
 
 VF_API vf_entry_t *vf_entry_create(void) {
-    vf_entry_t *e = (vf_entry_t *)calloc(1, sizeof(vf_entry_t));
+    vf_entry_t *e = (vf_entry_t *) calloc(1, sizeof(vf_entry_t));
     if (!e)
         return NULL;
 
@@ -300,7 +300,7 @@ VF_API int vf_file_resize(vf_file_t *vf, uint32_t new_count) {
         return 0;
     }
 
-    vf_entry_t *new_entries = (vf_entry_t *)realloc(vf->entries, new_count * sizeof(vf_entry_t));
+    vf_entry_t *new_entries = (vf_entry_t *) realloc(vf->entries, new_count * sizeof(vf_entry_t));
     if (!new_entries)
         return 1;
 
@@ -335,14 +335,14 @@ VF_API int vf_file_add_entry(vf_file_t *vf, const vf_entry_t *src) {
     if (src->file_path)
         vf_entry_set_path(dst, src->file_path);
 
-    memcpy(dst->unknown1,     src->unknown1,     8);
+    memcpy(dst->unknown1, src->unknown1, 8);
     memcpy(dst->original_crc, src->original_crc, 4);
     memcpy(dst->exported_crc, src->exported_crc, 4);
-    memcpy(dst->unknown2,     src->unknown2,     4);
-    dst->file_size          = src->file_size;
-    memcpy(dst->unknown4,     src->unknown4,     8);
+    memcpy(dst->unknown2, src->unknown2, 4);
+    dst->file_size = src->file_size;
+    memcpy(dst->unknown4, src->unknown4, 8);
     dst->source_file_number = src->source_file_number;
-    memcpy(dst->unknown5,     src->unknown5,     4);
+    memcpy(dst->unknown5, src->unknown5, 4);
 
     return 0;
 }
@@ -486,14 +486,14 @@ VF_API vf_entry_t *vf_entry_clone(const vf_entry_t *src) {
     if (src->file_path)
         vf_entry_set_path(dst, src->file_path);
 
-    memcpy(dst->unknown1,     src->unknown1,     8);
+    memcpy(dst->unknown1, src->unknown1, 8);
     memcpy(dst->original_crc, src->original_crc, 4);
     memcpy(dst->exported_crc, src->exported_crc, 4);
-    memcpy(dst->unknown2,     src->unknown2,     4);
-    dst->file_size          = src->file_size;
-    memcpy(dst->unknown4,     src->unknown4,     8);
+    memcpy(dst->unknown2, src->unknown2, 4);
+    dst->file_size = src->file_size;
+    memcpy(dst->unknown4, src->unknown4, 8);
     dst->source_file_number = src->source_file_number;
-    memcpy(dst->unknown5,     src->unknown5,     4);
+    memcpy(dst->unknown5, src->unknown5, 4);
 
     return dst;
 }
