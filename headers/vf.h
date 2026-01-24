@@ -88,7 +88,6 @@ VF_API void        vf_entry_set_file_size(vf_entry_t *e, uint32_t size);
 VF_API uint32_t    vf_entry_get_source_file_number(const vf_entry_t *e);
 VF_API void        vf_entry_set_source_file_number(vf_entry_t *e, uint32_t num);
 
-
 VF_API void        vf_entry_get_unknown1(const vf_entry_t *e, uint8_t out[8]);
 VF_API int         vf_entry_set_unknown1(vf_entry_t *e, const uint8_t in[8]);
 

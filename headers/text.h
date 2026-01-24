@@ -65,10 +65,56 @@ TEXT_API text_file_t *text_file_read(const char *filename);
 TEXT_API int          text_file_write(const char *filename, const text_file_t *tf);
 TEXT_API void         text_file_free(text_file_t *tf);
 
-/* ================== FILE ENTRY MANAGEMENT ================== */
+/* ================== STRING ACCESSORS ================== */
 
+TEXT_API void        text_entry_set_key(text_entry_t *e, const char *key);
+TEXT_API const char *text_entry_get_key(const text_entry_t *e);
+
+TEXT_API void        text_entry_set_value(text_entry_t *e, const char *value);
+TEXT_API const char *text_entry_get_value(const text_entry_t *e);
+
+/* ================== ENTRY LIFECYCLE ================== */
+
+TEXT_API text_entry_t *text_entry_create(void);
+TEXT_API void          text_entry_free(text_entry_t *e);
+
+/* ================== FILE ENTRY MANAGEMENT ================== */
 TEXT_API uint32_t     text_file_entry_count(const text_file_t *tf);
 TEXT_API text_entry_t *text_file_get_entry(text_file_t *tf, uint32_t index);
+
+TEXT_API int           text_file_add_entry(text_file_t *tf, const text_entry_t *src);
+TEXT_API int           text_file_remove_entry(text_file_t *tf, uint32_t index);
+TEXT_API int           text_file_resize(text_file_t *tf, uint32_t new_count);
+
+/* ================== FIELD GETTERS / SETTERS ================== */
+
+TEXT_API uint8_t       text_entry_get_key_offset(const text_entry_t *e);
+TEXT_API void          text_entry_set_key_offset(text_entry_t *e, uint8_t off);
+
+TEXT_API uint8_t       text_entry_get_value_offset(const text_entry_t *e);
+TEXT_API void          text_entry_set_value_offset(text_entry_t *e, uint8_t off);
+
+TEXT_API void          text_entry_get_unknown(const text_entry_t *e, uint8_t out[2]);
+TEXT_API int           text_entry_set_unknown(text_entry_t *e, const uint8_t in[2]);
+
+TEXT_API void          text_entry_get_unknown2(const text_entry_t *e, uint8_t out[4]);
+TEXT_API int           text_entry_set_unknown2(text_entry_t *e, const uint8_t in[4]);
+
+TEXT_API void          text_entry_get_unknown3(const text_entry_t *e, uint8_t out[4]);
+TEXT_API int           text_entry_set_unknown3(text_entry_t *e, const uint8_t in[4]);
+
+TEXT_API void          text_entry_get_unknown4(const text_entry_t *e, uint8_t *out);
+TEXT_API void          text_entry_set_unknown4(text_entry_t *e, uint8_t v);
+
+TEXT_API void          text_entry_get_unknown5(const text_entry_t *e, uint8_t *out);
+TEXT_API void          text_entry_set_unknown5(text_entry_t *e, uint8_t v);
+
+TEXT_API void          text_entry_get_unknown6(const text_entry_t *e, uint8_t *out);
+TEXT_API void          text_entry_set_unknown6(text_entry_t *e, uint8_t v);
+
+/* ================== UTILITIES ================== */
+
+TEXT_API text_entry_t *text_entry_clone(const text_entry_t *src);
 
 #ifdef __cplusplus
 }
