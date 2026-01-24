@@ -40,20 +40,6 @@ static void shift_bytes(uint8_t *buf, size_t len, int shift) {
         buf[i] = (uint8_t)((buf[i] + shift) & 0xFF);
 }
 
-static char *utf16_to_ascii_hacky(const uint8_t *raw, size_t len_bytes) {
-    size_t chars = len_bytes / 2;
-    char *out = (char *)malloc(chars + 1);
-    if (!out) return NULL;
-
-    for (size_t i = 0; i < chars; i++) {
-        uint16_t wc = (uint16_t)(raw[i * 2] | (raw[i * 2 + 1] << 8));
-        out[i] = (wc < 0x80) ? (char)wc : '?';
-    }
-
-    out[chars] = '\0';
-    return out;
-}
-
 /* ================== STRUCT I/O ================== */
 
 int text_header_read(FILE *f, text_header_t *h) {
@@ -81,28 +67,28 @@ int text_entry_read(FILE *f, text_entry_t *e) {
     if (io_read_exact(f, &prefix, sizeof(prefix)) != 0)
         return 1;
 
-    e->key_length = prefix.key_length;
+    const uint32_t key_len = prefix.key_length;
     memcpy(e->unknown, prefix.unknown, sizeof(e->unknown));
     e->key_offset = prefix.key_offset;
 
-    if (e->key_length > 0) {
-        uint8_t *encoded_key = (uint8_t *)malloc(e->key_length);
+    if (key_len > 0) {
+        uint8_t *encoded_key = (uint8_t *)malloc(key_len);
         if (!encoded_key) return 1;
 
-        if (io_read_exact(f, encoded_key, e->key_length)) {
+        if (io_read_exact(f, encoded_key, key_len)) {
             free(encoded_key);
             return 1;
         }
 
-        shift_bytes(encoded_key, e->key_length, (int)e->key_offset);
+        shift_bytes(encoded_key, key_len, (int)e->key_offset);
 
-        e->key = (char *)malloc(e->key_length + 1);
+        e->key = (char *)malloc(key_len + 1);
         if (!e->key) {
             free(encoded_key);
             return 1;
         }
-        memcpy(e->key, encoded_key, e->key_length);
-        e->key[e->key_length] = '\0';
+        memcpy(e->key, encoded_key, key_len);
+        e->key[key_len] = '\0';
 
         free(encoded_key);
     }
@@ -120,51 +106,29 @@ int text_entry_read(FILE *f, text_entry_t *e) {
     if (meta.raw_value_length < 2)
         return 1;
 
-    e->value_length = meta.raw_value_length - 2;
+    e->value_length = meta.raw_value_length;
     e->unknown4 = meta.unknown4;
     e->unknown5 = meta.unknown5;
     e->unknown6 = meta.unknown6;
 
-    if (e->value_length > 0) {
-        uint8_t *value_raw = (uint8_t *)malloc(e->value_length);
-        if (!value_raw) return 1;
+    uint8_t *value_raw = (uint8_t *)malloc(e->value_length);
+    if (!value_raw) return 1;
 
-        if (io_read_exact(f, value_raw, e->value_length)) {
-            free(value_raw);
-            return 1;
-        }
-
-        uint8_t skip[2];
-        if (io_read_exact(f, skip, sizeof(skip))) {
-            free(value_raw);
-            return 1;
-        }
-
-        if (e->value_length > 1) {
-            uint8_t second_byte = value_raw[1];
-            e->value_offset = (uint8_t)((256 - second_byte) & 0xFF);
-        } else {
-            e->value_offset = 0;
-        }
-
-        shift_bytes(value_raw, e->value_length, (int)e->value_offset);
-
-        e->value = utf16_to_ascii_hacky(value_raw, e->value_length);
+    if (io_read_exact(f, value_raw, e->value_length)) {
         free(value_raw);
-
-        if (!e->value)
-            return 1;
-
-        e->value_length = e->value_length / 2;
-    } else {
-        e->value = NULL;
-        uint8_t skip[2];
-        if (io_read_exact(f, skip, sizeof(skip)))
-            return 1;
+        return 1;
     }
 
+    e->value_offset = (uint8_t)((256 - value_raw[1]) & 0xFF);
+    shift_bytes(value_raw, e->value_length - 2, e->value_offset);
+
+    e->value = malloc(e->value_length);
+
+    memcpy(e->value, value_raw, e->value_length);
+    free(value_raw);
     return 0;
 }
+
 
 int text_entry_write(FILE *f, const text_entry_t *e) {
     (void)f;
@@ -323,7 +287,6 @@ TEXT_API int text_file_add_entry(text_file_t *tf, const text_entry_t *src) {
 
     if (src->key) {
         dst->key = dup_string(src->key);
-        dst->key_length = src->key_length;
     }
 
     if (src->value) {
@@ -358,7 +321,6 @@ TEXT_API void text_entry_set_key(text_entry_t *e, const char *key) {
     free(e->key);
     if (!key) {
         e->key = NULL;
-        e->key_length = 0;
         return;
     }
 
@@ -367,7 +329,6 @@ TEXT_API void text_entry_set_key(text_entry_t *e, const char *key) {
     if (!e->key) return;
 
     memcpy(e->key, key, len + 1);
-    e->key_length = (uint8_t)len;
 }
 
 TEXT_API const char *text_entry_get_value(const text_entry_t *e) {
@@ -499,7 +460,6 @@ TEXT_API text_entry_t *text_entry_clone(const text_entry_t *src) {
 
     if (src->key) {
         e->key = dup_string(src->key);
-        e->key_length = src->key_length;
     }
 
     if (src->value) {

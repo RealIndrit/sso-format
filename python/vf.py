@@ -12,7 +12,6 @@ vf = ctypes.CDLL(dll_name)
 # Header struct
 # ------------------------------------------------------------
 class VFHeader(ctypes.Structure):
-    _pack_ = 1
     _fields_ = [
         ("magic_bytes", ctypes.c_uint8 * 4),
         ("manifest_version", ctypes.c_uint32),
@@ -24,7 +23,6 @@ class VFHeader(ctypes.Structure):
 # Entry struct
 # ------------------------------------------------------------
 class VFEntry(ctypes.Structure):
-    _pack_ = 1
     _fields_ = [
         ("file_name", ctypes.c_char_p),
         ("unknown1", ctypes.c_uint8 * 8),
@@ -150,25 +148,11 @@ def _make_block_setter(func, size):
 
     return setter
 
-
-get_unknown1  = _make_block_getter(vf.vf_entry_get_unknown1, 8)
-set_unknown1  = _make_block_setter(vf.vf_entry_set_unknown1, 8)
-
 get_original_crc = _make_block_getter(vf.vf_entry_get_original_crc, 4)
 set_original_crc = _make_block_setter(vf.vf_entry_set_original_crc, 4)
 
 get_exported_crc = _make_block_getter(vf.vf_entry_get_exported_crc, 4)
 set_exported_crc = _make_block_setter(vf.vf_entry_set_exported_crc, 4)
-
-get_unknown2  = _make_block_getter(vf.vf_entry_get_unknown2, 4)
-set_unknown2  = _make_block_setter(vf.vf_entry_set_unknown2, 4)
-
-get_unknown4  = _make_block_getter(vf.vf_entry_get_unknown4, 8)
-set_unknown4  = _make_block_setter(vf.vf_entry_set_unknown4, 8)
-
-get_unknown5  = _make_block_getter(vf.vf_entry_get_unknown5, 4)
-set_unknown5  = _make_block_setter(vf.vf_entry_set_unknown5, 4)
-
 
 # ------------------------------------------------------------
 # Utilities: clone

@@ -29,7 +29,6 @@ typedef struct {
 #pragma pack(pop)
 
 typedef struct {
-    uint8_t  key_length;
     uint8_t  unknown[2];
     uint8_t  key_offset;
     char    *key;
