@@ -89,12 +89,6 @@ They should be preserved when rewriting CCX files.
 ## 6. Parsing Flow
 
 1. Read the file header `vf_header_t` 
-2. Loop over entries `vf_entry_t` until `entry_count` entries are consumed  
-3. For each entry:  
-   - Read name length  
-   - Read name  
-   - Read fixed‑size metadata `vf_entry_fixed_t` 
-   - Read path length  
-   - Read path  
+2. Loop over entries `vf_entry_t` until `entry_count` entries are consumed
 
 ---
