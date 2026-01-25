@@ -11,19 +11,17 @@ typedef struct {
     uint8_t key_length;
     uint8_t unknown[2];
     uint8_t key_offset;
-} entry_prefix_t;
+} entry_fixed_1_t;
 
 typedef struct {
     uint8_t unknown2[4];
     uint8_t unknown3[4];
-} entry_mid_t;
-
-typedef struct {
     uint32_t raw_value_length;
     uint8_t  unknown4;
     uint8_t  unknown5;
     uint8_t  unknown6;
-} entry_value_meta_t;
+} entry_fixed_2_t;
+
 #pragma pack(pop)
 
 static inline char *dup_string(const char *s) {
@@ -63,7 +61,7 @@ int text_entry_read(FILE *f, text_entry_t *e) {
     if (!f || !e) return 1;
     memset(e, 0, sizeof(*e));
 
-    entry_prefix_t prefix;
+    entry_fixed_1_t prefix;
     if (io_read_exact(f, &prefix, sizeof(prefix)) != 0)
         return 1;
 
@@ -93,23 +91,19 @@ int text_entry_read(FILE *f, text_entry_t *e) {
         free(encoded_key);
     }
 
-    entry_mid_t mid;
+    entry_fixed_2_t mid;
     if (io_read_exact(f, &mid, sizeof(mid)))
         return 1;
-    memcpy(e->unknown2, mid.unknown2, sizeof(e->unknown2));
-    memcpy(e->unknown3, mid.unknown3, sizeof(e->unknown3));
 
-    entry_value_meta_t meta;
-    if (io_read_exact(f, &meta, sizeof(meta)))
+    if (mid.raw_value_length < 2)
         return 1;
 
-    if (meta.raw_value_length < 2)
-        return 1;
-
-    e->value_length = meta.raw_value_length;
-    e->unknown4 = meta.unknown4;
-    e->unknown5 = meta.unknown5;
-    e->unknown6 = meta.unknown6;
+    memcpy(e->unknown2, mid.unknown2, 4);
+    memcpy(e->unknown3, mid.unknown3, 4);
+    e->value_length = mid.raw_value_length;
+    e->unknown4 = mid.unknown4;
+    e->unknown5 = mid.unknown5;
+    e->unknown6 = mid.unknown6;
 
     uint8_t *value_raw = (uint8_t *)malloc(e->value_length);
     if (!value_raw) return 1;
